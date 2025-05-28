@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WYZDYL_chat_history</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* 欢迎页样式 */
+        #welcome {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(45deg, 
+                #ff0000, #ff7f00, #ffff00, #00ff00,
+                #0000ff, #4b0082, #9400d3);
+            background-size: 1400% 1400%;
+            animation: rainbow 12s ease infinite;
+            z-index: 2000;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        @keyframes rainbow {
+            0% { background-position: 0% 50% }
+            50% { background-position: 100% 50% }
+            100% { background-position: 0% 50% }
+        }
+
+        #welcome h1 {
+            font-size: 3em;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        #passwordDialog {
+            background: rgba(0,0,0,0.8);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        #passwordInput {
+            padding: 12px;
+            margin: 15px 0;
+            width: 200px;
+            border: 2px solid white;
+            background: transparent;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+        }
+
+        #enterBtn {
+            padding: 12px 30px;
+            font-size: 1.1em;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            color: white;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        #enterBtn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+
+        .msg {
+            color: #ffcccc;
+            margin-top: 15px;
+            min-height: 20px;
+        }
+
+        /* 图库样式 */
+        .gallery {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .img-container {
+            position: relative;
+            padding-top: 100%;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .img-container:hover {
+            transform: scale(1.03);
+        }
+
+        .thumbnail {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* 模态框改进 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.97);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-content {
+            width: 90%;
+            max-width: 1200px;
+            height: 90vh;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .full-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            cursor: grab;
+            transition: transform 0.3s ease-out;
+        }
+
+        .full-image:active {
+            cursor: grabbing;
+        }
+
+        .close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            transition: transform 0.3s;
+            z-index: 1001;
+        }
+
+        .close:hover {
+            transform: rotate(90deg);
+        }
+
+        /* 加载动画 */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        /* 错误提示 */
+        .error {
+            color: white;
+            text-align: center;
+            font-size: 1.5em;
+            padding: 20px;
+        }
+
+        /* 控制条 */
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1001;
+        }
+
+        .control-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .control-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <!-- 欢迎页 -->
+    <div id="welcome">
+        <h1>FUCK_33_now!!!</h1>
+        <div id="passwordDialog">
+            <input type="password" id="passwordInput" placeholder="输入访问密码">
+            <br>
+            <button id="enterBtn">验证身份</button>
+            <div id="message" class="msg"></div>
+        </div>
+    </div>
+
+    <!-- 图片库 -->
+    <div class="gallery" id="gallery"></div>
+    
+    <!-- 大图模态框 -->
+    <div class="modal" id="modal">
+        <span class="close">&times;</span>
+        <div class="controls">
+            <button class="control-btn" onclick="zoomIn()">+ 放大</button>
+            <button class="control-btn" onclick="zoomOut()">- 缩小</button>
+            <button class="control-btn" onclick="resetZoom()">重置</button>
+        </div>
+        <div class="modal-content" id="modalContent"></div>
+    </div>
+
+    <script>
+        // 密码验证系统
+        let isLocked = localStorage.getItem('isLocked') === 'true';
+        const passwordInput = document.getElementById('passwordInput');
+        const enterBtn = document.getElementById('enterBtn');
+        const msgEl = document.getElementById('message');
+
+        enterBtn.addEventListener('click', function() {
+            const password = passwordInput.value.trim();
+            
+            // 特殊命令处理
+            if (password === 'lockit') {
+                isLocked = true;
+                localStorage.setItem('isLocked', 'true');
+                msgEl.textContent = '⚠️ 系统已永久锁定';
+                passwordInput.value = '';
+                return;
+            }
+
+            if (password === 'unlockwyzdylxxooilike33') {
+                isLocked = false;
+                localStorage.removeItem('isLocked');
+                msgEl.textContent = '🔓 锁定已解除';
+                passwordInput.value = '';
+                return;
+            }
+
+            // 正常密码验证
+            if (!isLocked && password === 'fuckthreethree') {
+                document.getElementById('welcome').style.display = 'none';
+                document.getElementById('gallery').style.display = 'grid';
+                initGallery();
+            } else {
+                msgEl.textContent = isLocked ? '🔒 系统已锁定' : '❌ 密码错误';
+                passwordInput.value = '';
+            }
+        });
+
+        // 回车键触发验证
+        passwordInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                enterBtn.click();
+            }
+        });
+
+        // 图片库功能
+        const images = Array.from({length: 17}, (_, i) => ({
+            thumb: `thumb_${i+1}.jpg`,
+            full: `full_${i+1}.jpg`
+        }));
+
+        let currentPanzoom = null;
+
+        function initGallery() {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            
+            images.forEach((img, index) => {
+                const container = document.createElement('div');
+                container.className = 'img-container';
+                
+                const thumbnail = new Image();
+                thumbnail.src = img.thumb;
+                thumbnail.className = 'thumbnail';
+                thumbnail.onclick = () => showFullImage(index);
+                
+                container.appendChild(thumbnail);
+                gallery.appendChild(container);
+            });
+
+            // 预加载所有大图
+            images.forEach(img => {
+                new Image().src = img.full;
+            });
+        }
+
+        function showFullImage(index) {
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modalContent');
+            
+            // 显示加载动画
+            content.innerHTML = '<div class="loading"></div>';
+            modal.style.display = 'flex';
+            setTimeout(() => modal.classList.add('active'), 10);
+
+            const fullImg = new Image();
+            fullImg.className = 'full-image';
+            
+            fullImg.onload = function() {
+                content.innerHTML = '';
+                content.appendChild(fullImg);
+                initPanzoom(fullImg);
+            };
+            
+            fullImg.onerror = function() {
+                content.innerHTML = '<div class="error">⚠️ 图片加载失败</div>';
+            };
+            
+            fullImg.src = images[index].full;
+        }
+
+        // 图片缩放功能
+        function initPanzoom(image) {
+            if (currentPanzoom) {
+                currentPanzoom.destroy();
+            }
+
+            let scale = 1;
+            let posX = 0;
+            let posY = 0;
+            let isDragging = false;
+            let startX, startY;
+
+            // 鼠标事件
+            image.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('mouseleave', endDrag);
+
+            // 触摸事件
+            image.addEventListener('touchstart', startDrag);
+            document.addEventListener('touchmove', drag);
+            document.addEventListener('touchend', endDrag);
+
+            // 滚轮缩放
+            image.addEventListener('wheel', handleWheel);
+
+            function startDrag(e) {
+                isDragging = true;
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                startX = clientX - posX;
+                startY = clientY - posY;
+                image.style.cursor = 'grabbing';
+            }
+
+            function drag(e) {
+                if (!isDragging) return;
+                e.preventDefault();
+                
+                const clientX = e.clientX || e.touches[0].clientX;
+                const clientY = e.clientY || e.touches[0].clientY;
+                
+                posX = clientX - startX;
+                posY = clientY - startY;
+                
+                updateTransform();
+            }
+
+            function endDrag() {
+                isDragging = false;
+                image.style.cursor = 'grab';
+            }
+
+            function handleWheel(e) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                scale *= delta;
+                scale = Math.min(Math.max(1, scale), 5);
+                updateTransform();
+            }
+
+            function updateTransform() {
+                image.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`;
+            }
+
+            currentPanzoom = {
+                destroy: () => {
+                    image.removeEventListener('mousedown', startDrag);
+                    document.removeEventListener('mousemove', drag);
+                    document.removeEventListener('mouseup', endDrag);
+                    document.removeEventListener('mouseleave', endDrag);
+                    image.removeEventListener('touchstart', startDrag);
+                    document.removeEventListener('touchmove', drag);
+                    document.removeEventListener('touchend', endDrag);
+                    image.removeEventListener('wheel', handleWheel);
+                }
+            };
+        }
+
+        // 控制按钮功能
+        function zoomIn() {
+            applyZoom(1.2);
+        }
+
+        function zoomOut() {
+            applyZoom(0.8);
+        }
+
+        function resetZoom() {
+            const image = document.querySelector('.full-image');
+            if (image) {
+                image.style.transform = 'translate(0, 0) scale(1)';
+            }
+        }
+
+        function applyZoom(factor) {
+            const image = document.querySelector('.full-image');
+            if (!image) return;
+
+            const currentTransform = image.style.transform.match(/scale\(([\d.]+)\)/);
+            let scale = currentTransform ? parseFloat(currentTransform[1]) : 1;
+            scale *= factor;
+            scale = Math.min(Math.max(1, scale), 5);
+            
+            image.style.transform = `translate(0, 0) scale(${scale})`;
+        }
+
+        // 关闭模态框
+        document.querySelector('.close').onclick = () => {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('active');
+            setTimeout(() => {
+                modal.style.display = 'none';
+                if (currentPanzoom) {
+                    currentPanzoom.destroy();
+                    currentPanzoom = null;
+                }
+            }, 300);
+        }
+    </script>
+</body>
+</html>
